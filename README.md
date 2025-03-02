@@ -30,6 +30,38 @@ cp wrangler.example.jsonc wrangler.jsonc
 npm run dev
 ```
 
-```
+```bash
 npm run deploy
 ```
+
+## データベース
+
+### テーブル作成
+
+SQL ファイルは `sql/` ディレクトリに保存されています。
+
+#### 本番環境（リモート）
+
+```bash
+# リモートのD1データベースにテーブルを作成
+wrangler d1 execute todo-app-db --remote --file=./sql/schema.sql
+
+# リモートのテーブル構造を確認
+wrangler d1 execute todo-app-db --remote --command="SELECT * FROM sqlite_master WHERE type='table';"
+```
+
+#### 開発環境（ローカル）
+
+```bash
+# ローカルのD1データベースにテーブルを作成
+wrangler d1 execute todo-app-db --local --file=./sql/schema.sql
+
+# ローカルのテーブル構造を確認
+wrangler d1 execute todo-app-db --local --command="SELECT * FROM sqlite_master WHERE type='table';"
+```
+
+注意:
+
+1. ローカル環境で開発・テストを行う際は必ず`--local`フラグを使用
+2. 本番環境（リモート）に反映する際は`--remote`フラグを使用
+3. フラグを指定しない場合、デフォルトでリモートに対して実行されます

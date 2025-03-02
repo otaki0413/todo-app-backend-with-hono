@@ -1,0 +1,16 @@
+-- テーブルの削除
+DROP TABLE IF EXISTS todos;
+
+-- テーブルの作成
+CREATE TABLE IF NOT EXISTS todos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  completed BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- シードデータの挿入
+INSERT INTO todos (title) VALUES ('test');
+INSERT INTO todos (title) VALUES ('test2');
+INSERT INTO todos (title) VALUES ('test3');
