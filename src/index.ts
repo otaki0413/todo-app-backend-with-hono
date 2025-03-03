@@ -1,53 +1,47 @@
 import { Hono } from 'hono';
+import { basicAuth } from 'hono/basic-auth';
+import { prettyJSON } from 'hono/pretty-json';
+import api from './api';
+import { Bindings } from './bindings';
 
-type Bindings = {
-  DB: D1Database;
-};
+/**
+ * メインのアプリケーションインスタンスを作成
+ */
+const app = new Hono();
 
-const app = new Hono<{ Bindings: Bindings }>();
+// ルートパスへのアクセス用エンドポイント
+app.get('/', (c) => c.text('Pretty Todo App API'));
 
-// Get all todos
-app.get('/todos', async (c) => {
-  try {
-    const { results } = await c.env.DB.prepare('SELECT * FROM todos').all();
-    console.log(results);
-    return c.json(results);
-  } catch (e) {
-    return c.json({ err: (e as Error).message }, 500);
+// 404エラーハンドリング - 存在しないエンドポイントへのアクセス時の処理
+app.notFound((c) => c.json({ message: 'Not Found', ok: false }, 404));
+
+/**
+ * ミドルウェアの設定
+ * - JSONレスポンスの整形
+ * - Basic認証の実装
+ */
+const middleware = new Hono<{ Bindings: Bindings }>();
+
+// レスポンスJSONを見やすく整形するミドルウェアを全エンドポイントに適用
+middleware.use('*', prettyJSON());
+
+/**
+ * Basic認証ミドルウェアの設定
+ * - GETリクエスト以外のすべてのTodo操作に認証を要求
+ * - username: test
+ * - password: test123
+ */
+middleware.use('/todos/*', async (c, next) => {
+  if (c.req.method !== 'GET') {
+    const auth = basicAuth({ username: 'test', password: 'test123' });
+    return auth(c, next);
+  } else {
+    await next();
   }
 });
 
-// Create a todo
-app.post('/todos', async (c) => {
-  const { title } = await c.req.json();
-  const { results } = await c.env.DB.prepare(
-    'INSERT INTO todos (title) VALUES (?)'
-  )
-    .bind(title)
-    .run();
-
-  return c.json(results);
-});
-
-// Update a todo
-app.put('/todos/:id', async (c) => {
-  const { id } = c.req.param();
-  const { title } = await c.req.json();
-  const { results } = await c.env.DB.prepare(
-    'UPDATE todos SET title = ? WHERE id = ?'
-  )
-    .bind(title, id)
-    .run();
-  return c.json(results);
-});
-
-// Delete a todo
-app.delete('/todos/:id', async (c) => {
-  const { id } = c.req.param();
-  const { results } = await c.env.DB.prepare('DELETE FROM todos WHERE id = ?')
-    .bind(id)
-    .run();
-  return c.json(results);
-});
+// ミドルウェアとAPIルートの設定
+app.route('/api', middleware);
+app.route('/api', api);
 
 export default app;
